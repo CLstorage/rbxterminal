@@ -1,0 +1,691 @@
+local players = game:GetService("Players")
+local localplayer = players.LocalPlayer
+local ts = game:GetService("TweenService")
+local playergui = localplayer:WaitForChild("PlayerGui")
+local uis = game:GetService("UserInputService")
+local cas = game:GetService("ContextActionService")
+local path = game
+local mousedover = false
+local closed = true
+local busy = false
+local csi = 10
+local lines = 0
+local firstperson = true
+local commands = {
+	"help",
+	"ls",
+	"cd <путь>",
+	"rm [-r|-rf] <путь>",
+	"echo <текст> [> файл]",
+	"cat <файл>",
+	"mv <откуда> <куда>",
+	"cp <что> <куда> [-r]",
+	"exit",
+	"whoami",
+	"date",
+	"find [-r] <имя>",
+	"folder <имя>",
+	"pwd",
+	"cls",
+	"findscripts",
+	"findevents",
+	"setprop <объект> <свойство> <значение>",
+	"props <объект>",
+	"getparent",
+	"getchild <имя>",
+	"getclassname <обьект>"
+}
+local hub = Instance.new("ScreenGui",playergui)
+hub.Name = "hub"
+hub.IgnoreGuiInset = true
+hub.ResetOnSpawn = false
+hub.Enabled = not closed
+local hub_window = Instance.new("Frame", hub)
+hub_window.Name = "hub_window"
+hub_window.AnchorPoint = Vector2.new(0.5,0.5)
+hub_window.Position = UDim2.new(0.5,0,0.5,0)
+hub_window.Size = UDim2.new(0.4,0,0.4,0)
+hub_window.BackgroundTransparency = 1
+local hub_window_ull = Instance.new("UIListLayout", hub_window)
+hub_window_ull.SortOrder = Enum.SortOrder.LayoutOrder
+hub_window_ull.FillDirection = Enum.FillDirection.Vertical
+hub_window_ull.HorizontalFlex = Enum.UIFlexAlignment.Fill
+hub_window_ull.VerticalFlex = Enum.UIFlexAlignment.Fill
+local terminal = Instance.new("Frame", hub_window)
+terminal.LayoutOrder = 1
+terminal.Name = "terminal"
+terminal.BackgroundColor3 = Color3.fromRGB(0,0,0)
+terminal.BorderSizePixel = 0
+terminal.Size = UDim2.new(1,0,0.8,0)
+local terminal_us = Instance.new("UIStroke", terminal)
+terminal_us.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+terminal_us.Color = Color3.fromRGB(255,255,255)
+terminal_us.LineJoinMode = Enum.LineJoinMode.Miter
+terminal_us.Thickness = 0.6
+local hub_buttons = Instance.new("Frame", hub_window)
+hub_buttons.LayoutOrder = 2
+hub_buttons.Name = "hub_buttons"
+hub_buttons.Size = UDim2.new(1,0,0.2,0)
+hub_buttons.Transparency = 1
+local hub_buttons_ull = Instance.new("UIListLayout", hub_buttons)
+hub_buttons_ull.SortOrder = Enum.SortOrder.LayoutOrder
+hub_buttons_ull.FillDirection = Enum.FillDirection.Vertical
+hub_buttons_ull.HorizontalFlex = Enum.UIFlexAlignment.Fill
+hub_buttons_ull.VerticalFlex = Enum.UIFlexAlignment.None
+local buttons1 = Instance.new("Frame", hub_buttons)
+buttons1.Size = UDim2.new(1,0,0.5,0)
+buttons1.Name = "buttons1"
+buttons1.LayoutOrder = 1
+buttons1.BackgroundTransparency = 1
+local buttons2 = Instance.new("Frame", hub_buttons)
+buttons2.Name = "buttons2"
+buttons2.Size = UDim2.new(1,0,0.5,0)
+buttons2.LayoutOrder = 2
+buttons2.BackgroundTransparency = 1
+local buttons2_ull = Instance.new("UIListLayout", buttons2)
+buttons2_ull.SortOrder = Enum.SortOrder.LayoutOrder
+buttons2_ull.FillDirection = Enum.FillDirection.Horizontal
+buttons2_ull.HorizontalFlex = Enum.UIFlexAlignment.Fill
+buttons2_ull.VerticalFlex = Enum.UIFlexAlignment.Fill
+local buttons1_ull = Instance.new("UIListLayout", buttons1)
+buttons1_ull.SortOrder = Enum.SortOrder.LayoutOrder
+buttons1_ull.FillDirection = Enum.FillDirection.Horizontal
+buttons1_ull.HorizontalFlex = Enum.UIFlexAlignment.Fill
+buttons1_ull.VerticalFlex = Enum.UIFlexAlignment.Fill
+local terminal_input = Instance.new("TextBox", buttons1)
+terminal_input.Name = "terminal_input"
+terminal_input.Size = UDim2.new(0.5,0,1,0)
+terminal_input.LayoutOrder = 1
+terminal_input.TextScaled = true
+terminal_input.TextColor3 = Color3.fromRGB(255,255,255)
+terminal_input.Font = Enum.Font.Ubuntu
+terminal_input.PlaceholderText = "command"
+terminal_input.Text = ""
+terminal_input.PlaceholderColor3 = Color3.fromRGB(150,150,150)
+terminal_input.BackgroundColor3 = Color3.fromRGB(0,0,0)
+terminal_input.BorderSizePixel = 1
+terminal_input.TextXAlignment = Enum.TextXAlignment.Left
+local terminal_input_up = Instance.new("UIPadding",terminal_input)
+terminal_input_up.PaddingTop = UDim.new(0,4)
+terminal_input_up.PaddingBottom = UDim.new(0,4)
+terminal_input_up.PaddingLeft = UDim.new(0,4)
+terminal_input_up.PaddingRight = UDim.new(0,4)
+local terminal_input_us = Instance.new("UIStroke", terminal_input)
+terminal_input_us.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+terminal_input_us.Color = Color3.fromRGB(255,255,255)
+terminal_input_us.LineJoinMode = Enum.LineJoinMode.Miter
+terminal_input_us.Thickness = 0.6
+local exit_button = Instance.new("TextButton", buttons2)
+exit_button.BackgroundColor3 = Color3.fromRGB(0,0,0)
+exit_button.Name = "exit_button"
+exit_button.BorderSizePixel = 0
+exit_button.Text = "exit"
+exit_button.TextColor3 = Color3.fromRGB(255,255,255)
+exit_button.Font = Enum.Font.Ubuntu
+exit_button.TextScaled = true
+exit_button.Size = UDim2.new(0.5,0,1,0)
+exit_button.LayoutOrder = 2
+local terminal_sf = Instance.new("ScrollingFrame", terminal)
+terminal_sf.Size = UDim2.new(1,0,1,0)
+terminal_sf.BackgroundTransparency = 1
+terminal_sf.BottomImage = ""
+terminal_sf.CanvasSize = UDim2.new(0,0,16,0)
+terminal_sf.ScrollBarImageColor3 = Color3.fromRGB(255,255,255)
+terminal_sf.ScrollBarThickness = 3
+terminal_sf.TopImage = ""
+terminal_sf.ScrollingDirection = Enum.ScrollingDirection.Y
+terminal_sf.ScrollingEnabled = false
+terminal_sf.Name = "terminal_sf"
+local exit_button_up = Instance.new("UIPadding", exit_button)
+exit_button_up.PaddingTop = UDim.new(0,3)
+exit_button_up.PaddingBottom = UDim.new(0,3)
+exit_button_up.PaddingLeft = UDim.new(0,3)
+exit_button_up.PaddingRight = UDim.new(0,3)
+local exit_button_us = Instance.new("UIStroke", exit_button)
+exit_button_us.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+exit_button_us.Color = Color3.fromRGB(255,255,255)
+exit_button_us.LineJoinMode = Enum.LineJoinMode.Miter
+exit_button_us.Thickness = 0.6
+local close_button = Instance.new("TextButton", buttons2)
+close_button.BackgroundColor3 = Color3.fromRGB(0,0,0)
+close_button.Name = "close_button"
+close_button.BorderSizePixel = 0
+close_button.Text = "close"
+close_button.TextColor3 = Color3.fromRGB(255,255,255)
+close_button.Font = Enum.Font.Ubuntu
+close_button.TextScaled = true
+close_button.Size = UDim2.new(0.5,0,1,0)
+close_button.LayoutOrder = 1
+local close_button_up = Instance.new("UIPadding", close_button)
+close_button_up.PaddingTop = UDim.new(0,3)
+close_button_up.PaddingBottom = UDim.new(0,3)
+close_button_up.PaddingLeft = UDim.new(0,3)
+close_button_up.PaddingRight = UDim.new(0,3)
+local close_button_us = Instance.new("UIStroke", close_button)
+close_button_us.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+close_button_us.Color = Color3.fromRGB(255,255,255)
+close_button_us.LineJoinMode = Enum.LineJoinMode.Miter
+close_button_us.Thickness = 0.6
+local terminal_ull = Instance.new("UIListLayout", terminal_sf)
+terminal_ull.FillDirection = Enum.FillDirection.Vertical
+terminal_ull.SortOrder = Enum.SortOrder.LayoutOrder
+terminal_ull.HorizontalFlex = Enum.UIFlexAlignment.Fill
+terminal_ull.VerticalFlex = Enum.UIFlexAlignment.None
+local terminal_up = Instance.new("UIPadding", terminal_sf)
+terminal_up.PaddingTop = UDim.new(0,3)
+terminal_up.PaddingBottom = UDim.new(0,3)
+terminal_up.PaddingLeft = UDim.new(0,3)
+terminal_up.PaddingRight = UDim.new(0,3)
+local line_template = Instance.new("TextBox", terminal_sf)
+line_template.Name = "line_0"
+line_template.Size = UDim2.new(1,0,0.06,0)
+line_template.BackgroundTransparency = 0
+line_template.BorderSizePixel = 0
+line_template.BackgroundColor3 = Color3.fromRGB(0,0,0)
+line_template.ClearTextOnFocus = false
+line_template.TextEditable = false
+line_template.Text = ""
+line_template.Font = Enum.Font.Ubuntu
+line_template.TextColor3 = Color3.fromRGB(255,255,255)
+line_template.TextScaled = true
+line_template.TextXAlignment = Enum.TextXAlignment.Left
+line_template.LayoutOrder = 0
+line_template.Visible = false
+line_template.SizeConstraint = Enum.SizeConstraint.RelativeXX
+local line_template_up = Instance.new("UIPadding", line_template)
+line_template_up.PaddingTop = UDim.new(0,2)
+line_template_up.PaddingBottom = UDim.new(0,2)
+line_template_up.PaddingLeft = UDim.new(0,2)
+line_template_up.PaddingRight = UDim.new(0,2)
+local connections = {}
+local function trackConnection(conn)
+	table.insert(connections, conn)
+	return conn
+end
+local function close_handler()
+	closed = not closed
+	hub.Enabled = not closed
+end
+local function tweenColor(obj, toColor, duration)
+	local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local tween = ts:Create(obj, tweenInfo, {BackgroundColor3 = toColor})
+	tween:Play()
+	return tween
+end
+local function setupButtonAnim(button)
+	trackConnection(button.MouseEnter:Connect(function()
+		tweenColor(button, Color3.fromRGB(45, 45, 45), 0.2)
+	end))
+	trackConnection(button.MouseLeave:Connect(function()
+		tweenColor(button, Color3.fromRGB(0, 0, 0), 0.2)
+	end))
+end
+local function exit_handler()
+	for _, conn in ipairs(connections) do
+		if conn.Connected then
+			conn:Disconnect()
+		end
+	end
+	connections = {}
+	closed = true
+	hub.Enabled = false
+	hub:Destroy()
+end
+uis.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseWheel and mousedover then
+		local rotation = input.Position.Z
+		terminal_sf.CanvasPosition += Vector2.new(0, csi * -rotation)
+	end
+end)
+trackConnection(uis.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseWheel and mousedover then
+		local rotation = input.Position.Z
+		terminal_sf.CanvasPosition += Vector2.new(0, csi * -rotation)
+	end
+end))
+trackConnection(terminal_sf.MouseEnter:Connect(function()
+	terminal_sf.ScrollingEnabled = false
+	mousedover = true
+	cas:BindAction("csi", function()
+		return Enum.ContextActionResult.Sink
+	end, false, Enum.UserInputType.MouseWheel)
+end))
+trackConnection(terminal_sf.MouseLeave:Connect(function()
+	terminal_sf.ScrollingEnabled = true
+	mousedover = false
+	cas:UnbindAction("csi")
+end))
+setupButtonAnim(exit_button)
+setupButtonAnim(close_button)
+trackConnection(exit_button.MouseButton1Click:Connect(function()
+	exit_handler()
+end))
+trackConnection(close_button.MouseButton1Click:Connect(function()
+	close_handler()
+end))
+local function line(str, col)
+	local line_clone = line_template:Clone()
+	lines += 1
+	line_clone.LayoutOrder = lines
+	line_clone.Name = "line_" .. lines
+	line_clone.Text = str
+	line_clone.TextColor3 = col or Color3.fromRGB(255, 255, 255)
+	line_clone.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	line_clone.TextTransparency = 1
+	line_clone.TextStrokeTransparency = 1
+	line_clone.Visible = true
+	line_clone.Parent = terminal_sf
+	local TweenService = game:GetService("TweenService")
+	local function tweenColor(obj, toColor, duration)
+		local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		local tween = TweenService:Create(obj, tweenInfo, {BackgroundColor3 = toColor})
+		tween:Play()
+		return tween
+	end
+	local function tweenTextTransparency(obj, toTextTransparency, toStrokeTransparency, duration)
+		local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+		local tween = TweenService:Create(obj, tweenInfo, {
+			TextTransparency = toTextTransparency,
+			TextStrokeTransparency = toStrokeTransparency,
+		})
+		tween:Play()
+		return tween
+	end
+	tweenTextTransparency(line_clone, 0, 0, 0.1)
+	trackConnection(line_clone.MouseEnter:Connect(function()
+		tweenColor(line_clone, Color3.fromRGB(45,45,45), 0.2)
+	end))
+	trackConnection(line_clone.MouseLeave:Connect(function()
+		tweenColor(line_clone, Color3.fromRGB(0,0,0), 0.2)
+	end))
+	task.defer(function()
+		local sfTop = terminal_sf.AbsolutePosition.Y
+		local sfBottom = sfTop + terminal_sf.AbsoluteSize.Y
+		local lineTop = line_clone.AbsolutePosition.Y
+		local lineBottom = lineTop + line_clone.AbsoluteSize.Y
+		local canvasY = terminal_sf.CanvasPosition.Y
+		if lineBottom > sfBottom then
+			local diff = lineBottom - sfBottom
+			terminal_sf.CanvasPosition = Vector2.new(0, canvasY + diff)
+		elseif lineTop < sfTop then
+			local diff = sfTop - lineTop
+			terminal_sf.CanvasPosition = Vector2.new(0, math.max(canvasY - diff, 0))
+		end
+	end)
+end
+trackConnection(terminal_input.FocusLost:Connect(function(ep)
+	if busy then
+		terminal_input.Text = ""
+		terminal_input:CaptureFocus()
+		return
+	end
+	wait()
+	if ep then
+		local input = terminal_input.Text
+		if input:match("^%s*$") then return end
+		busy = true
+		local cmd, args = input:match("^(%S+)%s*(.*)")
+		cmd = cmd and cmd:lower() or ""
+		args = args or ""
+		if cmd == "help" then
+			line("> help")
+			for _, c in ipairs(commands) do
+				line(c)
+				wait()
+			end
+		elseif cmd == "ls" then
+			line("> ls")
+			for _, child in ipairs(path:GetChildren()) do
+				line(child.Name)
+				wait()
+			end
+		elseif cmd == "cls" then
+			line("> cls")
+			for _, child in ipairs(terminal_sf:GetChildren()) do
+				if child:IsA("TextBox") and child.Name ~= "line_0" then
+					child:Destroy()
+				end
+			end
+			lines = 0
+			terminal_sf.CanvasPosition = Vector2.new(0, 0)
+		elseif cmd == "cd" then
+			line("> " .. input)
+			line("")
+			local targetPath = args:match("^%s*(.-)%s*$")
+			local function findByPath(startObj, pathStr)
+				local current = startObj
+				for part in pathStr:gmatch("[^/]+") do
+					if part == ".." then
+						current = current.Parent or current
+					elseif part == "." then
+					else
+						local child = current:FindFirstChild(part)
+						if child then
+							current = child
+						else
+							return nil
+						end
+					end
+				end
+				return current
+			end
+			local newPath = nil
+			if targetPath == "game" then
+				newPath = game
+			elseif targetPath:sub(1,5) == "game." then
+				newPath = findByPath(game, targetPath:sub(6))
+			else
+				newPath = findByPath(path, targetPath)
+				if not newPath then
+					newPath = findByPath(game, targetPath)
+				end
+			end
+			if newPath then
+				path = newPath
+			else
+				line("не удалось найти указанный путь.")
+			end
+		elseif cmd == "rm" then
+			line("> " .. input)
+			local argsTbl = {}
+			for arg in args:gmatch("%S+") do table.insert(argsTbl, arg) end
+			local recursive = false
+			local targetName
+			for i = 1, #argsTbl do
+				if argsTbl[i] == "-r" or argsTbl[i] == "-rf" then
+					recursive = true
+				else
+					targetName = argsTbl[i]
+				end
+			end
+			if not targetName then
+				line("rm: требуется указать путь")
+			else
+				local targetObj = path:FindFirstChild(targetName) or game:FindFirstChild(targetName)
+				if not targetObj then
+					line("rm: объект не найден: "..targetName)
+				else
+					local function removeObj(obj)
+						if (#obj:GetChildren() > 0) and not recursive then
+							line("rm: объект содержит детей, используйте -r")
+							return
+						end
+						for _, c in ipairs(obj:GetChildren()) do
+							removeObj(c)
+							wait()
+						end
+						obj:Destroy()
+						line("удалено: "..obj.Name)
+					end
+					removeObj(targetObj)
+				end
+			end
+		elseif cmd == "echo" then
+			line("> " .. input)
+			local text, filename = args:match('(.+)%s+>%s*(.+)')
+			if text and filename then
+				local fileObj = path:FindFirstChild(filename)
+				if not fileObj then
+					fileObj = Instance.new("StringValue")
+					fileObj.Name = filename
+					fileObj.Parent = path
+				end
+				fileObj.Value = text
+				line("записано в файл: "..filename)
+			else
+				line(args)
+			end
+		elseif cmd == "mv" then
+			line("> " .. input)
+			local fromName, toName = args:match("(%S+)%s+(%S+)")
+			if not fromName or not toName then
+				line("mv: требуется 2 аргумента")
+			else
+				local objFrom = path:FindFirstChild(fromName) or game:FindFirstChild(fromName)
+				local dest = path:FindFirstChild(toName) or game:FindFirstChild(toName)
+				if not objFrom then
+					line("mv: объект не найден: "..fromName)
+				elseif not dest then
+					line("mv: цель не найдена: "..toName)
+				else
+					objFrom.Parent = dest
+					line("перемещено "..fromName.." в "..toName)
+				end
+			end
+		elseif cmd == "cp" then
+			line("> " .. input)
+			local argsTbl = {}
+			for arg in args:gmatch("%S+") do table.insert(argsTbl, arg) end
+			local recursive = false
+			for i = #argsTbl, 1, -1 do
+				if argsTbl[i] == "-r" then
+					recursive = true
+					table.remove(argsTbl, i)
+				end
+			end
+			if #argsTbl < 2 then
+				line("cp: недостаточно аргументов")
+			else
+				local sourceName = argsTbl[1]
+				local destName = argsTbl[2]
+				local srcObj = path:FindFirstChild(sourceName) or game:FindFirstChild(sourceName)
+				local destObj = path:FindFirstChild(destName) or game:FindFirstChild(destName)
+				if not srcObj then
+					line("cp: источник не найден: "..sourceName)
+				elseif not destObj then
+					line("cp: место назначения не найдено: "..destName)
+				else
+					local function cloneRecursive(obj, parent)
+						local clone = obj:Clone()
+						clone.Parent = parent
+						if recursive then
+							for _, c in ipairs(obj:GetChildren()) do
+								cloneRecursive(c, clone)
+								wait()
+							end
+						end
+					end
+					if recursive or #srcObj:GetChildren() == 0 then
+						cloneRecursive(srcObj, destObj)
+						line("скопировано "..sourceName.." в "..destName)
+					else
+						line("cp: объект содержит детей, используйте -r")
+					end
+				end
+			end
+		elseif cmd == "exit" then
+			line("> exit")
+			line("выход из терминала")
+			terminal_input:ReleaseFocus()
+			exit_handler()
+		elseif cmd == "whoami" then
+			line("> whoami")
+			line("Пользователь: " .. localplayer.Name)
+		elseif cmd == "date" then
+			line("> date")
+			line(tostring(os.date("%c")))
+		elseif cmd == "find" then
+			line("> " .. input)
+			local recursive = false
+			local searchName = args:match("%-r%s+(%S+)")
+			if not searchName then
+				searchName = args:match("(%S+)")
+			else
+				recursive = true
+			end
+			if not searchName then
+				line("find: требуется имя")
+			else
+				local function findIn(obj, name, results)
+					for _, c in ipairs(obj:GetChildren()) do
+						if c.Name:find(name) then
+							table.insert(results, c)
+						end
+						if recursive then
+							findIn(c, name, results)
+						end
+					end
+				end
+				local found = {}
+				findIn(path, searchName, found)
+				if #found == 0 then
+					line("ничего не найдено")
+				else
+					for _, fobj in ipairs(found) do
+						line(fobj:GetFullName())
+						wait()
+					end
+				end
+			end
+		elseif cmd == "folder" then
+			line("> " .. input)
+			local folderName = args:match("(%S+)")
+			if not folderName then
+				line("folder: требуется имя")
+			else
+				local folder = Instance.new("Folder")
+				folder.Name = folderName
+				folder.Parent = path
+				line("создана папка: "..folderName)
+			end
+		elseif cmd == "pwd" then
+			line("> pwd")
+			line(path:GetFullName())
+		elseif cmd == "findscripts" then
+			line("> findscripts")
+			local function findScripts(obj)
+				for _, c in ipairs(obj:GetChildren()) do
+					if c:IsA("ModuleScript") or c:IsA("Script") or c:IsA("LocalScript") then
+						line(c:GetFullName())
+						wait()
+					end
+					findScripts(c)
+				end
+			end
+			findScripts(path)
+		elseif cmd == "findevents" then
+			line("> findevents")
+			local function findEvents(obj)
+				for _, c in ipairs(obj:GetChildren()) do
+					if c.Name:lower():find("event") then
+						line(c:GetFullName())
+						wait()
+					end
+					findEvents(c)
+				end
+			end
+			findEvents(path)
+		elseif cmd == "setprop" then
+			line("> " .. input)
+			local objName, propName, propValue = args:match("(%S+)%s+(%S+)%s+(.+)")
+			if not objName or not propName or not propValue then
+				line("setprop: требуется 3 аргумента")
+			else
+				local obj = path:FindFirstChild(objName) or game:FindFirstChild(objName)
+				if not obj then
+					line("setprop: объект не найден: "..objName)
+				else
+					local success, err = pcall(function()
+						local currentType = typeof(obj[propName])
+						if currentType == "number" then
+							obj[propName] = tonumber(propValue)
+						elseif currentType == "boolean" then
+							obj[propName] = (propValue == "true")
+						else
+							obj[propName] = propValue
+						end
+					end)
+					if success then
+						line("свойство установлено")
+					else
+						line("ошибка при установке свойства: "..tostring(err))
+					end
+				end
+			end
+		elseif cmd == "props" then
+			line("> " .. input)
+			local objName = args:match("(%S+)")
+			if not objName then
+				line("props: требуется имя объекта")
+			else
+				local obj = path:FindFirstChild(objName) or game:FindFirstChild(objName)
+				if not obj then
+					line("props: объект не найден")
+				else
+					local attrs = obj:GetAttributes()
+					for k, v in pairs(attrs) do
+						line(tostring(k)..": "..tostring(v))
+						wait()
+					end
+
+					local properties = {
+						"Name", "ClassName", "Parent", "Archivable", "Visible", "Transparency",
+						"Position", "Size", "Anchored", "CanCollide", "Locked", "Material"
+					}
+					for _, prop in ipairs(properties) do
+						local ok, val = pcall(function() return obj[prop] end)
+						if ok and val ~= nil then
+							line(prop..": "..tostring(val))
+							wait()
+						end
+					end
+				end
+			end
+		elseif cmd == "getparent" then
+			line("> getparent")
+			if path.Parent then
+				line(path.Parent.Name)
+			else
+				line("нет родителя")
+			end
+		elseif cmd == "getchild" then
+			line("> " .. input)
+			local childName = args:match("(%S+)")
+			if not childName then
+				line("getchild: требуется имя")
+			else
+				local child = path:FindFirstChild(childName)
+				if child then
+					line(child:GetFullName())
+				else
+					line("getchild: не найден")
+				end
+			end
+		elseif cmd == "getclassname" then
+			line("> " .. input)
+			local objName = args:match("(%S+)")
+			if not objName then
+				line("getclassname: требуется имя объекта")
+			else
+				local obj = path:FindFirstChild(objName) or game:FindFirstChild(objName)
+				if not obj then
+					line("getclassname: объект не найден")
+				else
+					line(typeof(obj))
+				end
+			end
+		else
+			line("> " .. input)
+			line("команда не найдена")
+		end
+		terminal_input.Text = ""
+		terminal_input:CaptureFocus()
+		busy = false
+	end
+end))
+uis.InputBegan:Connect(function(input, gameprocessed)
+	if input.KeyCode == Enum.KeyCode.V then
+		if firstperson == false and closed == false then
+			firstperson = true
+			workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+			localplayer.CameraMode = Enum.CameraMode.LockFirstPerson
+			close_handler()
+		else
+			firstperson = false
+			workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+			localplayer.CameraMode = Enum.CameraMode.Classic
+			uis.MouseBehavior = Enum.MouseBehavior.Default
+			close_handler()
+		end
+	end
+end)
