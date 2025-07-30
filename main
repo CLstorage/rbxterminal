@@ -231,12 +231,12 @@ local function exit_handler()
 	hub.Enabled = false
 	hub:Destroy()
 end
-uis.InputChanged:Connect(function(input)
+trackConnection(uis.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseWheel and mousedover then
 		local rotation = input.Position.Z
 		terminal_sf.CanvasPosition += Vector2.new(0, csi * -rotation)
 	end
-end)
+end))
 trackConnection(uis.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseWheel and mousedover then
 		local rotation = input.Position.Z
@@ -673,7 +673,7 @@ trackConnection(terminal_input.FocusLost:Connect(function(ep)
 		busy = false
 	end
 end))
-uis.InputBegan:Connect(function(input, gameprocessed)
+trackConnection(uis.InputBegan:Connect(function(input, gameprocessed)
 	if input.KeyCode == Enum.KeyCode.V then
 		if firstperson == false and closed == false then
 			firstperson = true
@@ -688,4 +688,4 @@ uis.InputBegan:Connect(function(input, gameprocessed)
 			close_handler()
 		end
 	end
-end)
+end))
